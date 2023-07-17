@@ -1,6 +1,10 @@
 #include "bits/stdc++.h"
 using namespace std;
 
+bool compare(pair<int, int> a, pair<int, int> b) {
+    return a.second < b.second;
+}
+
 int main() {
     ios::sync_with_stdio(0);
     cin.tie(0);
@@ -10,7 +14,13 @@ int main() {
 
     vector<int> points (N);
     vector<int> norm_points (N);
-    
+    // vector< pair<int, int> > points(N);
+    // vector<int> result(N);
+
+    // for (int i=0; i<N; i++) {
+    //     points[i].first = i;
+    //     cin >> points[i].second;
+    // }
     for (int i=0; i<N; i++) 
         cin >> points[i];
     
@@ -34,7 +44,7 @@ int main() {
         if (count[i] > 0)
             is_point[i] = true;
     }
-    count[0] = 0;
+    count[0] = 1;
 
     // Calculate the number of points before each point
     for (int i=0; i<max_p; i++) {
@@ -45,7 +55,7 @@ int main() {
     }
 
     for (int i=0; i<N; i++) {
-        points[i] = count[points[i] - min_p];
+        points[i] = count[points[i] + min_p];
     }
 
     for (auto point : points) 
