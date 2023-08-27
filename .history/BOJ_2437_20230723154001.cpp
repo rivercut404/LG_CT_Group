@@ -1,0 +1,29 @@
+#include "bits/stdc++.h"
+using namespace std;
+
+int main(void) {
+    ios::sync_with_stdio(0);
+	cin.tie(0);
+
+	int N;
+	vector<int> numbers(1000, 0);
+
+	cin >> N;
+	for (int i=0; i<N; i++)
+	    cin >> numbers[i];
+
+	sort(numbers.begin(), numbers.end());
+
+	if (numbers[0] != 1) {
+		cout << 1; return 0;
+	}
+
+	int sum = 1; int i = 1;
+
+	while (numbers[i] <= sum+1) {
+    	sum += numbers[i];
+		i++;
+	}
+
+	cout << sum+1;
+}
