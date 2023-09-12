@@ -2,107 +2,95 @@
 using namespace std;
 #define X first
 #define Y second
-
-int dx[4] = {1, 0, -1, 0};
-int dy[4] = {0, 1, 0, -1};
+#define NOT_REACHABLE 1000001
+typedef pair<int,int> point;
 
 int N, M;
-vector<string> board;
+int dx[] = {1, 0, -1, 0};
+int dy[] = {0, 1, 0, -1};
+char board[1001][1001];
+int from_s[1001][1001];
+int from_d[1001][1001];
 
-void bfs(pair<int,int> sp, int dist[][1002]) {
-    queue< pair<int,int> > Q;
-	dist[sp.X][sp.Y] = 0;
-	Q.push(sp);
+int sp;  // Distance of the shortest path
+
+void bfs(point p, int (*visited)[1001]) 
+{
+    queue<point> Q;
+	visited[p.X][p.Y] = 1;
+	Q.push(p);
 
 	while (!Q.empty()) {
-	    pair<int,int> cur = Q.front(); Q.pop();
-        for (int dir=0; dir<4; dir++) {
+		point cur = Q.front(); Q.pop();
+		// if (visited[cur.X][cur.Y] == sp) return;
+		for (int dir = 0; dir < 4; dir++) {
 			int nx = cur.X + dx[dir];
 			int ny = cur.Y + dy[dir];
-			if (nx<0 || nx>=N || ny<0 || ny>=M)
-			    continue;
-			if (dist[nx][ny]>=0 || board[nx][ny]!='0')
-			    continue;
-			dist[nx][ny] = dist[cur.X][cur.Y] + 1;
+			if (nx < 0 || nx >= N || ny < 0 || ny >= M) continue;
+			if (board[nx][ny] == '1' || visited[nx][ny] != 0) continue;
+			visited[nx][ny] = visited[cur.X][cur.Y] + 1;
+		    // if (nx == N-1 &&  ny == M-1) return;
 			Q.push(make_pair(nx,ny));
 		}
 	}
+}
+
+bool to_break(int r, int c)
+{
+	int n;
+	for (int dir = 0; dir < 4; dir++) {
+		int nx = r + dx[dir];
+		int ny = c + dy[dir];
+		if (nx < 0 || nx >= N || ny < 0 || ny >= M) continue;
+		else if (board[nx][ny] == '0') n++;
+	}
+	if (n >= 2) return true;
+	else return false;
 }
 
 int main(void) 
 {
     ios::sync_with_stdio(0);
 	cin.tie(0);
-	int dist[1002][1002];
-	int dist_goal[1002][1002];
 
-	cin  >> N >> M;
-    for (int i=0; i<N; i++) {
-    	string row;
-		cin >> row;
-		board.push_back(row);
-		fill(dist[i], dist[i]+M, -1);
-		fill(dist_goal[i], dist_goal[i]+M, -1);
+	cin >> N >> M;
+    for (int i = 0; i < N; i++) {
+		cin >> board[i];
 	}
-    bfs(make_pair(0,0), dist);
-	bfs(make_pair(N-1,M-1), dist_goal);
-	int min_dist = 10000003;
-	if (dist[N-1][M-1] >= 0) min_dist = dist[N-1][M-1];
-	vector< pair<int,int> > walls;
+    // Execute bfs and get the dist from S, D
+    bfs(make_pair(0,0), from_s);
+    bfs(make_pair(N-1,M-1), from_d);
+	sp = from_s[N-1][M-1] != 0 ? from_s[N-1][M-1] : NOT_REACHABLE;
 
-	// Get the list of reachable wall blocks from O
-	for (int i=0; i<N; i++) {
-    	for (int j=0; j<M; j++) {
-		    if (board[i][j]=='1') {
-    			for (int dir_w=0; dir_w<4; dir_w++) {
-					for (int dir_g=0; dir_g<4; dir_g++) {
-						if (dir_w == dir_g) continue;
-
-						int nx = i + dx[dir_w]; int ny = j + dy[dir_w];
-						int gx = i + dx[dir_g]; int gy = j + dy[dir_g];
-						if (nx<0 || nx>=N || ny<0 || ny>=M)
-							continue;
-						if (gx<0 || gx>=N || gy<0 || gy>=M)
-							continue;
-						if (board[nx][ny]=='0' && dist[nx][ny]>=0 &&
-						    board[gx][gy]=='0' && dist_goal[gx][gy]>=0) {
-							walls.push_back(make_pair(i,j));
-							// if (dist[i][j]>=0 && dist[i][j]>dist[nx][ny]+1) dist[i][j] = dist[nx][ny] + 1;
-							dist[i][j] = dist[nx][ny] + 1;
-							// if (dist_goal[i][j]>=0 && dist_goal[i][j]>dist[gx][gy]+1) 
-							dist_goal[i][j] = dist_goal[gx][gy] + 1;
+    for (int r = 0; r < N; r++) {
+		for (int c = 0; c < M; c++) {
+    		if (board[r][c] == '0') continue;
+			else if (to_break(r, c)) {
+				for (int i = 0; i < 3; i++) {
+					for (int j = i+1; j < 4; j++) {
+						point p1 = make_pair(r + dx[i], c + dy[i]);
+						point p2 = make_pair(r + dx[j], c + dy[j]);
+						if (p1.X < 0 || p1.X >= N || p1.Y < 0 || p1.Y >= M) continue;
+						if (p2.X < 0 || p2.X >= N || p2.Y < 0 || p2.Y >= M) continue;
+						if (board[p1.X][p1.Y] == '1' || board[p2.X][p2.Y] == '1') continue;
+						if (from_s[p1.X][p1.Y] != 0 && from_d[p2.X][p2.Y] != 0) {
+						    // Found the block to break!
+							int tmp = from_s[p1.X][p1.Y] + from_d[p2.X][p2.Y] + 1;
+							if (sp > tmp) sp = tmp;
+						}
+						if (from_s[p2.X][p2.Y] != 0 && from_d[p1.X][p1.Y] != 0) {
+						    // Found the block to break!
+							int tmp = from_d[p1.X][p1.Y] + from_s[p2.X][p2.Y] + 1;
+							if (sp > tmp) sp = tmp;
 						}
 					}
-				}    	
+				}
 			}
 		}
 	}
-
-	for (auto wall : walls) {
-		int x = wall.X; int y = wall.Y;
-		if (min_dist > dist[x][y] + dist_goal[x][y])
-		    min_dist = dist[x][y] + dist_goal[x][y];
+    if (sp == NOT_REACHABLE) {
+		cout << -1 << '\n';
+		return 0;
 	}
-
-	// for (auto wall : walls) {
-	//     int to_wall = 2002;
-	//     // Calculate the distance of each wall block
-    // 	for (int dir=0; dir<4; dir++) {
-	// 		int nx = wall.X + dx[dir];
-	// 		int ny = wall.Y + dy[dir];
-	// 		if (nx<0 || nx>=N || ny<0 || ny>=M)
-	// 			continue;
-	// 		if (board[nx][ny]!='0' || dist[nx][ny]<0)
-	// 		    continue;
-	// 		if (to_wall > dist[nx][ny]+1) to_wall = dist[nx][ny]+1;
-	// 	}
-	// 	// Calculate distance from wall to the goal
-	// 	for (int i=0; i<N; i++) fill(dist[i], dist[i]+M, -1);
-	// 	bfs(wall);
-	// 	if (dist[N-1][M-1] < 0) continue;
-	// 	if (min_dist > to_wall+dist[N-1][M-1]) min_dist = to_wall + dist[N-1][M-1];
-	// }
-
-	if (min_dist == 2002) cout << -1;
-	else cout << min_dist+1;
+	cout << sp << '\n';
 }
